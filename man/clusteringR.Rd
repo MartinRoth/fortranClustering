@@ -6,6 +6,11 @@
 \usage{
 clusteringR(x, thres = 0)
 }
+\arguments{
+\item{x}{the data matrix}
+
+\item{thres}{threshold}
+}
 \description{
 detect clusters in a matrix
 }

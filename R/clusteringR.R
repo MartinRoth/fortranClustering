@@ -1,4 +1,6 @@
 #' detect clusters in a matrix
+#' @param x the data matrix
+#' @param thres threshold
 #' @export
 clusteringR <- function(x,thres=.0){
   if(!is.matrix(x))stop("x must be a matrix")
