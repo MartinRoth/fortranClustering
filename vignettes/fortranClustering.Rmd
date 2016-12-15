@@ -1,5 +1,5 @@
 ---
-title: "fortranClustering HowTo"
+title: "fortranClustering"
 author: "Kai Lochbihler"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -12,22 +12,24 @@ vignette: >
 ## Introduction and installation
 The package fortranClustering delivers a basic example of how to use a fortran subroutine in R. It also comes with an equivalent implementation of the fortran subroutine in R code and a simple example data set.
 
-To build and install the package on a linux maching make sure that the devtools package is installed on your system then load it with
+To build and install the package on a linux system make sure that the devtools package is installed. Then load it with
 ```{r, LoadDT}
 library(devtools)
 ```
 
 Now you can install the fortranClustering package directly from github
-#```{r, InstallFC}
-#install_github("MartinRoth/fortranClustering",ref="FirstAttempt")
-#```
+```r
+install_github("MartinRoth/fortranClustering",ref="FirstAttempt")
+```
 and load it
 ```{r, LoadFC}
 library(fortranClustering)
 ```
 
 ## How to include fortran code in R
+Using a R package is a convenient way of adding functionalities to R such as new functions or including code that was not written in R. Documentation and man pages are usually shipped with an R package. However, installing an R package hides pretty much all the steps needed to run fortran code in R. Thus, in this section we will step-by-step explain how to make a fortran subroutine executable within a R session.
 
+### Step 1: The fortran subroutine
 ```fortran
 subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
     
@@ -139,13 +141,33 @@ subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
 end subroutine clustering
 ```
 
+### Step 2: Compiling a shared object file
 ```bash
 R CMD SHLIB clustering2d.f90
 ```
 
-
+### Step 3: Loading the shared object into R
 ```r
-clusteringf90 <- function(x,startID=1,thres=0) {
+dyn.load('clustering2d.so')
+```
+
+### Step 4: The .Fortran CALL
+```r
+retdata <- .Fortran("clustering",
+           data2d = as.double(x),
+           startID = as.integer(1),
+           thres = as.double(thres),
+           finID = as.integer(1),
+           numIDs = as.integer(1),
+           tcl = matrix(rep(as.integer(1),nx*ny),ncol=nx),
+           missval=as.double(-999.0),
+           nx=as.integer(nx),
+           ny=as.integer(ny))
+```
+
+### Optional step 5: Writing a wrapper function
+```r
+clusteringf90 <- function(x,thres=0) {
   # only allow a matrix as input
   if(!is.matrix(x)){
     stop("x is not a matrix!")
@@ -162,7 +184,7 @@ clusteringf90 <- function(x,startID=1,thres=0) {
   # call the fortran subroutine
   retdata <- .Fortran("clustering",
                        data2d = as.double(x),
-                       startID = as.integer(startID),
+                       startID = as.integer(1),
                        thres = as.double(thres),
                        finID = as.integer(1),
                        numIDs = as.integer(1),
@@ -177,25 +199,20 @@ clusteringf90 <- function(x,startID=1,thres=0) {
 }
 ```
 
-
+## An example R session
 ```{r, LoadData}
-load("../sample_precip_data2d.gz")
-sample_data <- precip.matrix
-rm(precip.matrix)
-sample_data[sample_data<0.000166666666667] <- NA
-filled.contour(sample_data*60*10,color.palette=rainbow)
-
+data("fCdata")
 ```
 
 
 ```{r, rspeed}
 system.time({
-  sample_output.f90 <- clusteringf90(sample_data)
+  sample_output.f90 <- clusteringf90(fCdata)
 })
 
 # now the R implementation
 system.time({
-  sample_output.R <- clusteringR(sample_data)
+  sample_output.R <- clusteringR(fCdata)
 })
 ```
 
