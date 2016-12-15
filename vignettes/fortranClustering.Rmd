@@ -1,0 +1,248 @@
+---
+title: "fortranClustering HowTo"
+author: "Kai Lochbihler"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction and installation
+The package fortranClustering delivers a basic example of how to use a fortran subroutine in R. It also comes with an equivalent implementation of the fortran subroutine in R code and a simple example data set.
+
+To build and install the package on a linux maching make sure that the devtools package is installed on your system then load it with
+```{r, LoadDT}
+library(devtools)
+```
+
+Now you can install the fortranClustering package directly from github
+#```{r, InstallFC}
+#install_github("MartinRoth/fortranClustering",ref="FirstAttempt")
+#```
+and load it
+```{r, LoadFC}
+library(fortranClustering)
+```
+
+## How to include fortran code in R
+
+```fortran
+subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
+    
+  implicit none
+  ! input
+  real(kind=8), intent(in) :: data2d(nx,ny) ! the input 2D field
+  integer, intent(in)      :: nx,ny         ! input dimensions
+  integer, intent(in)      :: startID       ! the first ID to use
+  real(kind=8), intent(in) :: thres         ! minimum value for clustering  
+  real(kind=8), intent(in) :: missval       ! value for missing data
+  ! output
+  integer, intent(out)     :: finID         ! the last used ID
+  integer, intent(out)     :: numIDs        ! the total number of clusters/IDs
+  integer, intent(out)     :: tcl(nx,ny)    ! the clustered field holding the IDs
+  ! counters etc.
+  integer                  :: x,y           ! for spatial dimenstions
+  integer                  :: conx,cony     ! for spatial dims in nested loop
+  integer                  :: i,tp          ! for misc.
+  integer                  :: clID          ! for iterating clusters
+  integer, allocatable     :: allIDs(:)     ! helper vector for re-assigning of IDs
+  integer                  :: neighb(2)     ! temporary memory for neighbouring grid points
+  logical                  :: mask(nx,ny)   ! logical field; true if value > thres
+
+  ! initialize variables and arrays
+  tcl=-999
+  mask=.false.
+  clID=startID
+  numIDs=0
+
+  ! mask values higher than threshold and if not missing value
+  do y=1,ny
+    do x=1,nx
+      if(data2d(x,y)>thres .AND. data2d(x,y).ne.missval)mask(x,y)=.true.
+    end do
+  end do
+  
+  ! check if there are any gridpoints to cluster
+  if(ANY(mask))then
+  
+    ! assign IDs to continous cells
+    do y=1,ny
+      do x=1,nx
+        neighb=-999
+        if(mask(x,y))then
+          ! gather neighbouring IDs; left,up
+          if(x.ne.1)  neighb(1)=tcl((x-1),y)
+          if(y.ne.1)  neighb(2)=tcl(x,(y-1))
+          ! check if there is NO cluster around the current pixel; create new one
+          if(ALL(neighb==-999))then
+            tcl(x,y)=clID
+            clID=clID+1
+            numIDs=numIDs+1
+          else
+            ! both neighbours are in the same cluster
+            if(neighb(1)==neighb(2).and.neighb(1).ne.-999)then
+              tcl(x,y)=neighb(1)
+            end if
+            ! both neighbors are in different clusters but none of them is (-999)
+            if(neighb(1).ne.neighb(2) .and. neighb(1).ne.-999 .and. neighb(2).ne.-999)then
+              numIDs=numIDs-1
+              tcl(x,y)=MINVAL(neighb)
+              ! update the existing higher cluster with the lowest neighbour
+              do cony=1,ny
+                do conx=1,nx
+                  if(tcl(conx,cony)==MAXVAL(neighb))tcl(conx,cony)=MINVAL(neighb)
+                end do
+              end do
+            end if
+            ! both neighbors are in different clusters but ONE of them is empty(-999)
+            if(neighb(1).ne.neighb(2) .and. (neighb(1)==-999 .or. neighb(2)==-999))then
+              tcl(x,y)=MAXVAL(neighb)
+            end if
+          end if
+        end if
+      end do
+    end do
+  
+    ! gather IDs and rename to gapless ascending IDs
+    if(numIDs>0)then
+      allocate(allIDs(numIDs))
+      allIDs=-999
+      clID=startID-1
+      tp=1
+      do y=1,ny
+        do x=1,nx
+          if(.NOT.ANY(allIDs==tcl(x,y)) .AND. tcl(x,y).ne.-999)then
+            allIDs(tp)=tcl(x,y)
+            tp=tp+1
+          end if
+        end do
+      end do
+  
+      do i=1,tp-1
+        clID=clID+1
+        do y=1,ny
+          do x=1,nx
+            if(tcl(x,y)==allIDs(i))then
+              tcl(x,y)=clID
+            end if
+          end do
+        end do
+      end do
+      deallocate(allIDs)
+    end if
+    
+  end if
+  ! return final cluster ID
+  finID=clID
+end subroutine clustering
+```
+
+```bash
+R CMD SHLIB clustering2d.f90
+```
+
+
+```r
+clusteringf90 <- function(x,startID=1,thres=0) {
+  # only allow a matrix as input
+  if(!is.matrix(x)){
+    stop("x is not a matrix!")
+  }
+  # load the fortran subroutine
+  if(!is.loaded('clustering2d')){
+    dyn.load('clustering2d.so')
+  }
+  # set NA to -999
+  x[is.na(x)] <- -999.0
+  # get dimensions of input matrix
+  nx <- dim(x)[1]
+  ny <- dim(x)[2]
+  # call the fortran subroutine
+  retdata <- .Fortran("clustering",
+                       data2d = as.double(x),
+                       startID = as.integer(startID),
+                       thres = as.double(thres),
+                       finID = as.integer(1),
+                       numIDs = as.integer(1),
+                       tcl = matrix(rep(as.integer(1),nx*ny),ncol=nx),
+                       missval=as.double(-999.0),
+                       nx=as.integer(nx),
+                       ny=as.integer(ny))
+  # set -999 in tcl back to NA
+  retdata$tcl[retdata$tcl==-999] <- NA
+  # return the data
+  return(retdata)
+}
+```
+
+
+```{r, LoadData}
+load("../sample_precip_data2d.gz")
+sample_data <- precip.matrix
+rm(precip.matrix)
+sample_data[sample_data<0.000166666666667] <- NA
+filled.contour(sample_data*60*10,color.palette=rainbow)
+
+```
+
+
+```{r, rspeed}
+system.time({
+  sample_output.f90 <- clusteringf90(sample_data)
+})
+
+# now the R implementation
+system.time({
+  sample_output.R <- clusteringR(sample_data)
+})
+```
+
+Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+
+- Never uses retina figures
+- Has a smaller default figure size
+- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))

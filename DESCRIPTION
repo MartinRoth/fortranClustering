@@ -1,11 +1,10 @@
 Package: fortranClustering
 Type: Package
-Title: What the Package Does (Title Case)
+Title: A simple example for using FORTRAN in R.
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Author: Kai Lochbihler
+Maintainer: Kai Lochbihler <kai.lochbihler@knmi.nl>
+Description: This package provides an example for using FORTRAN code in R. An equivalent implementation in R code of the FORTRAN subroutine is included as well as a sample data set.
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true

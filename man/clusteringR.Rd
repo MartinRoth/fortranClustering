@@ -2,16 +2,20 @@
 % Please edit documentation in R/clusteringR.R
 \name{clusteringR}
 \alias{clusteringR}
-\title{detect clusters in a matrix}
+\title{Detect continuous clusters in fields (R)}
 \usage{
 clusteringR(x, thres = 0)
 }
 \arguments{
-\item{x}{the data matrix}
+\item{x}{a data matrix}
 
 \item{thres}{threshold}
 }
+\value{
+A matrix of the same dimensions as x holding the IDs of the detected clusters.
+}
 \description{
-detect clusters in a matrix
+This is a R implementation of a 2D clustering algorithm to detect continuous areas of grid cells above a certain threshold.
+For a function using fortran code see \code{\link{clusteringf90}}.
 }
 

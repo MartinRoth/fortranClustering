@@ -2,11 +2,23 @@
 % Please edit documentation in R/clustering2df90.R
 \name{clusteringf90}
 \alias{clusteringf90}
-\title{this is a wrapper function for the fortran subroutine clustering}
+\title{Detect continuous clusters in fields (fortran)}
+\source{
+The original fortran subroutine can be found at \url{https://github.com/lochbika/celltrack/blob/master/src/modcelldetection.f90}
+}
 \usage{
-clusteringf90(x, startID = 1, thres = 0)
+clusteringf90(x, thres = 0)
+}
+\arguments{
+\item{x}{a data matrix}
+
+\item{thres}{threshold}
+}
+\value{
+A matrix of the same dimensions as x holding the IDs of the detected clusters.
 }
 \description{
-this is a wrapper function for the fortran subroutine clustering
+This is a wrapper function for the fortran subroutine clustering.
+The algorithm is equivalent to the R implementation in \code{\link{clusteringR}}.
 }
 

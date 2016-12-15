@@ -2,5 +2,4 @@
 
 export(clusteringR)
 export(clusteringf90)
-export(hello)
 useDynLib(fortranClustering)

@@ -1,6 +1,9 @@
-#' detect clusters in a matrix
-#' @param x the data matrix
+#' @title Detect continuous clusters in fields (R)
+#' @description This is a R implementation of a 2D clustering algorithm to detect continuous areas of grid cells above a certain threshold.
+#' For a function using fortran code see \code{\link{clusteringf90}}.
+#' @param x a data matrix
 #' @param thres threshold
+#' @return A matrix of the same dimensions as x holding the IDs of the detected clusters.
 #' @export
 clusteringR <- function(x,thres=.0){
   if(!is.matrix(x))stop("x must be a matrix")
