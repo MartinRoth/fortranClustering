@@ -1,8 +1,16 @@
-#####
-# This file describes how to build and use the fortran subroutine in R
-# It is assumed that all listed files are in the working directory of your R session.
-#####
+# fortranClustering
 
+Provides an example of how to use FORTRAN code within R.
+As example a 2D clustering routine is chosen, where the performance boost by
+using FORTRAN becomes obvious (although R is not really optimized).
+
+The fortran code is located in the *src* folder and the R wrapper in the *R*
+folder.
+
+For more information and a step-wise implementation of FORTRAN routines, without
+the package structure, is given in the [vignette](vignettes/fortranClustering.Rmd).
+
+<!--
 ##
 # Files
 ##
@@ -41,3 +49,5 @@ The file clustering2df90.R contains a wrapper function
 which hides most of the arguments needed by the fortran subroutine.
 It also loads the shared object file and makes sure that all arguments are propper data types before passing them and calling the subroutine.
 Missing values (NA) are handled, too.
+--> 
+
