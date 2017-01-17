@@ -1,11 +1,12 @@
+! This subroutine is from https://github.com/lochbika/celltrack
 subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
-    
+
   implicit none
   ! input
   real(kind=8), intent(in) :: data2d(nx,ny) ! the input 2D field
   integer, intent(in)      :: nx,ny         ! input dimensions
   integer, intent(in)      :: startID       ! the first ID to use
-  real(kind=8), intent(in) :: thres         ! minimum value for clustering  
+  real(kind=8), intent(in) :: thres         ! minimum value for clustering
   real(kind=8), intent(in) :: missval       ! value for missing data
   ! output
   integer, intent(out)     :: finID         ! the last used ID
@@ -32,10 +33,10 @@ subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
       if(data2d(x,y)>thres .AND. data2d(x,y).ne.missval)mask(x,y)=.true.
     end do
   end do
-  
+
   ! check if there are any gridpoints to cluster
   if(ANY(mask))then
-  
+
     ! assign IDs to continous cells
     do y=1,ny
       do x=1,nx
@@ -73,7 +74,7 @@ subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
         end if
       end do
     end do
-  
+
     ! gather IDs and rename to gapless ascending IDs
     if(numIDs>0)then
       allocate(allIDs(numIDs))
@@ -88,7 +89,7 @@ subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
           end if
         end do
       end do
-  
+
       do i=1,tp-1
         clID=clID+1
         do y=1,ny
@@ -101,7 +102,7 @@ subroutine clustering(data2d,startID,thres,finID,numIDs,tcl,missval,nx,ny)
       end do
       deallocate(allIDs)
     end if
-    
+
   end if
   ! return final cluster ID
   finID=clID
