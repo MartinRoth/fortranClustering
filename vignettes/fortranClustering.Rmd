@@ -19,7 +19,7 @@ library(devtools)
 
 Now you can install the fortranClustering package directly from github
 ```r
-install_github("MartinRoth/fortranClustering",ref="FirstAttempt")
+install_github("MartinRoth/fortranClustering",ref="master")
 ```
 and load it
 ```{r, LoadFC}
@@ -249,4 +249,4 @@ system.time({
 <!-- ``` -->
 
 ## Conclusion
-bla
+The R build environment and FORTRAN interface provide a comfortable way to include FORTRAN code in R. With a few commands it is possible to compile and load subroutines into the R workspace. 
