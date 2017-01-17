@@ -1,6 +1,6 @@
 # fortranClustering
 
-Provides an example of how to use FORTRAN code within R.
+This package provides an example of how to use FORTRAN code within R.
 As example a 2D clustering routine is chosen, where the performance boost by
 using FORTRAN becomes obvious (although R is not really optimized).
 
